@@ -3,22 +3,22 @@
 ### A **C++17** library for **reading and writing** [NumPy](https://numpy.org/) `.npy` files, with **optional** `.npz` (zip) archive support
 #### Documentation & Homepage: [https://pixlab.io/numpy-cpp-library](https://pixlab.io/numpy-cpp-library).
 
----
-
 ## Features
 
-- **Float or Double**: By default, syNumpy only supports **`float`** and **`double`** arrays.  
-- **Read & Write**: Single- or multi-dimensional `.npy` files (NumPy versions **1.0**, **2.0**, **3.0**).  
-- **Endian Check**: Warns if the file’s byte order differs from the host system. (Byte-swapping is **not** yet implemented.)  
-- **Optional NPZ**: If `SYNUMPY_ENABLE_NPZ=1` is defined, syNumpy can zip/unzip multiple `.npy` arrays into a single `.npz` file. Otherwise, no external dependencies are required.
-
----
+- **NpyArray**: A container that stores the loaded array’s shape, word size, fortran order, and data in memory.  
+- **Load & Save**:  
+  - `syNumpy::loadNpy(...)` reads from a file.  
+  - `syNumpy::loadNpyBuffer(...)` reads from a raw memory buffer.  
+  - `syNumpy::saveNpy(...)` writes or appends data.  
+- **Append Mode**: Save with `mode = "a"` to extend the first dimension of an existing file (if shapes match).  
+- **Endian Checks**: Warn if the file is big-endian while the system is little-endian (or vice versa). No auto-swapping.  
+- **Optional NPZ**: `-DSYNUMPY_ENABLE_NPZ=1` enables zip-based `.npz` archiving (requires **zlib**). Minimal example included.
 
 ## Quick Start
 
-1. **Include** [syNumpy.hpp](syNumpy.hpp) in your project.  
-2. **Compile** with `-std=c++17`.  
-3. (Optional) Define `SYNUMPY_ENABLE_NPZ=1` and link **zlib** (`-lz`) to enable `.npz` support.
+1. **Include** `syNumpy.hpp` in your C++17 project.
+2. **Compile** with `-std=c++17`.
+3. **(Optional)** Define `SYNUMPY_ENABLE_NPZ=1` and link **zlib** (`-lz`) for `.npz` archiving.
 
 ### Minimal Example
 
@@ -26,50 +26,32 @@
 #include "syNumpy.hpp"
 #include <iostream>
 
-int main()
-{
-    // Save a float array
-    std::vector<float> data = {1.0f, 2.0f, 3.0f};
-    std::vector<size_t> shape = {3};
-    syNumpy::SaveNpy("float_test.npy", data, shape, syNumpy::NpyVersion::V2_0);
-
-    // Load the array
+int main() {
+    // 1) Save a float array
     {
-        std::vector<float> loaded;
-        std::vector<size_t> shapeLoaded;
-        syNumpy::LoadNpy("float_test.npy", loaded, shapeLoaded);
-        std::cout << "Shape: (";
-        for (auto s : shapeLoaded) std::cout << s << " ";
-        std::cout << ")\nData: ";
-        for (auto val : loaded) std::cout << val << " ";
-        std::cout << std::endl;
+        std::vector<float> data = {1.0f, 2.0f, 3.0f};
+        syNumpy::saveNpy("floats.npy", data); // overwrites if file exists
+    }
+
+    // 2) Load it back
+    {
+        syNumpy::NpyArray arr = syNumpy::loadNpy("floats.npy");
+        std::vector<float> loaded = arr.asVector<float>();
+        std::cout << "Loaded " << loaded.size() << " floats: ";
+        for (auto f : loaded) std::cout << f << " ";
+        std::cout << "\n";
     }
 
 #if SYNUMPY_ENABLE_NPZ
-    // If NPZ is enabled, create an archive with a double array
+    // 3) Create a .npz archive with multiple arrays
     {
-        syNumpy::NpzArchive archive;
-        std::vector<double> arr = {3.14, 2.71, 1.41};
-        archive.AddArray("my_double_array", arr, {3}, syNumpy::NpyVersion::V2_0);
-        archive.Save("test.npz");
-    }
-
-    // Load from the .npz
-    {
-        syNumpy::NpzArchive archive;
-        archive.Load("test.npz");
-        std::vector<double> out;
-        std::vector<size_t> shapeOut;
-        archive.GetArray("my_double_array", out, shapeOut);
-
-        std::cout << "my_double_array shape: (";
-        for (auto s : shapeOut) std::cout << s << " ";
-        std::cout << ")\nData: ";
-        for (auto val : out) std::cout << val << " ";
-        std::cout << std::endl;
+        syNumpy::NpzArchive zip;
+        std::vector<int> arr1 = {10, 20, 30};
+        std::vector<double> arr2 = {3.14, 2.71};
+        zip.addArray("ints", arr1);
+        zip.addArray("doubles", arr2);
+        zip.save("arrays.npz");
     }
 #endif
-
     return 0;
 }
-
