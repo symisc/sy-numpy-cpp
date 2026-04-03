@@ -58,7 +58,7 @@ void printShape(const syNumpy::NpyArray& array) {
         std::cout << array.shape()[i];
     }
     std::cout << ")\n";
-}  // namespace
+}
 
 template <typename T>
 void printValues(const std::vector<T>& values, const char* label) {
@@ -69,7 +69,7 @@ void printValues(const std::vector<T>& values, const char* label) {
     std::cout << "\n";
 }
 
-}
+}  // namespace
 
 int main() {
     try {

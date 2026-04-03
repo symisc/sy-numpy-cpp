@@ -4,6 +4,11 @@ project(synumpy VERSION 1.9.7 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
+# Automatically export symbols on Windows when building a shared library
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 option(SYNUMPY_BUILD_EXAMPLE "Build the example executable" ON)
 
 add_library(synumpy synumpy.cpp)
